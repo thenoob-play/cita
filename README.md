@@ -1391,3 +1391,4 @@ Font Awesome, Chart.js.
 | **Modo demostración** | Funcionamiento sin `MAIL_SERVER`: los correos se registran pero no se envían y pueden verse en la vista previa. |
 | **Reloj de negocio** | Fecha y hora actuales calculadas en la zona `TZ` mediante `utils.ahora()` y `utils.hoy()`. |
 | **Migración** | Script SQL numerado que lleva el esquema de una versión a la siguiente; las aplicadas quedan en `schema_migrations`. |
+# cita-proyect
