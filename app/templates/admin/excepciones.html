@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, post_btn %}
+{% block title %}Excepciones de {{ p.nombre }}{% endblock %}
+{% block content %}
+{% include "admin/_agenda_tabs.html" %}
+<div class="row g-4">
+  <div class="col-lg-4"><div class="card fade-up"><div class="card-header"><h5><i class="fa-solid fa-plus me-2"></i>Nueva excepción</h5></div>
+    <div class="card-body">
+      <form method="post" class="needs-validation">
+        {{ csrf_field() }}
+        <div class="mb-3"><label class="form-label">Fecha</label><input type="date" name="fecha" class="form-control" min="{{ hoy }}" value="{{ hoy }}" required></div>
+        <div class="mb-3"><label class="form-label">Tipo</label>
+          <select name="tipo" class="form-select" required>
+            <option value="bloqueo">Bloqueo (no atiende)</option>
+            <option value="extra">Turno extra (atiende además)</option>
+          </select></div>
+        <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="dia_completo" value="1" id="dia_completo">
+          <label class="form-check-label" for="dia_completo">Día completo (solo bloqueos)</label></div>
+        <div class="row">
+          <div class="col-6 mb-3"><label class="form-label">Desde</label><input type="time" name="hora_inicio" class="form-control"></div>
+          <div class="col-6 mb-3"><label class="form-label">Hasta</label><input type="time" name="hora_fin" class="form-control"></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Motivo</label><input name="motivo" class="form-control" required minlength="3" maxlength="255" placeholder="Vacaciones, congreso, jornada adicional…"></div>
+        <button class="btn btn-brand w-100" type="submit">Guardar excepción</button>
+      </form>
+    </div></div></div>
+  <div class="col-lg-8"><div class="card fade-up">
+    <div class="card-header"><h5><i class="fa-solid fa-calendar-xmark me-2"></i>Próximas excepciones</h5></div>
+    <div class="card-body small text-muted border-bottom py-2">Bloques del día = horario semanal vigente − bloqueos + turnos extra.</div>
+    <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Motivo</th><th>Registró</th><th></th></tr></thead>
+      <tbody>
+      {% for e in excepciones %}
+        <tr>
+          <td class="text-nowrap">{{ e.fecha|fecha_es }}</td>
+          <td>{% if e.tipo == 'bloqueo' %}<span class="badge text-bg-danger">Bloqueo</span>{% else %}<span class="badge text-bg-success">Extra</span>{% endif %}</td>
+          <td>{{ (e.hora_inicio ~ ' – ' ~ e.hora_fin) if e.hora_inicio else 'Día completo' }}</td>
+          <td>{{ e.motivo }}</td>
+          <td class="small">{{ e.creado_por_nombre or '—' }}</td>
+          <td class="text-end">{{ post_btn(url_for('admin.excepcion_eliminar', pid=p.id, eid=e.id), '', 'btn-outline-danger', 'fa-trash', '¿Eliminar esta excepción?', 'Eliminar') }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6"><div class="empty-state"><i class="fa-regular fa-calendar-check"></i>Sin excepciones próximas.</div></td></tr>
+      {% endfor %}
+      </tbody></table></div></div></div>
+</div>
+{% endblock %}

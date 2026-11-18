@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, estado_badge, post_btn %}
+{% block title %}Historial de {{ paciente.nombre }}{% endblock %}
+{% block content %}
+{% call page_header('fa-file-medical', 'Historial clínico (HU-08)', paciente.nombre ~ ' · Doc: ' ~ paciente.documento ~ ' · Tel: ' ~ (paciente.telefono or '—')) %}
+  <a class="btn btn-outline-secondary" href="{{ url_for('profesional.agenda') }}"><i class="fa-solid fa-arrow-left me-1"></i>Volver a la agenda</a>
+{% endcall %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card fade-up mb-4">
+      <div class="card-header"><h5><i class="fa-solid fa-notes-medical me-2"></i>Nueva nota de seguimiento</h5></div>
+      <div class="card-body">
+        {% if mis_citas %}
+        <form method="post" action="{{ url_for('profesional.historial_agregar', paciente_id=paciente.id) }}" class="needs-validation">
+          {{ csrf_field() }}
+          <div class="mb-3"><label class="form-label">Asociar a una de mis citas</label>
+            <select name="cita_id" class="form-select" required>
+              <option value="">-- Seleccione cita --</option>
+              {% for c in mis_citas %}<option value="{{ c.id }}">{{ c.fecha|fecha_es }} {{ c.hora }} · {{ c.motivo }} ({{ c.estado }})</option>{% endfor %}
+            </select><div class="invalid-feedback"></div></div>
+          <div class="mb-3"><label class="form-label">Observación / diagnóstico</label>
+            <textarea name="observacion" rows="3" class="form-control" required data-rule="texto5" placeholder="Síntomas, diagnóstico, tratamiento, evolución…"></textarea><div class="invalid-feedback"></div></div>
+          <button class="btn btn-brand" type="submit"><i class="fa-solid fa-plus me-1"></i>Registrar nota</button>
+        </form>
+        {% else %}
+          {% if motivo_turno %}<div class="alert alert-warning py-2 small" role="status"><i class="fa-solid fa-clock me-1"></i>{{ motivo_turno }}</div>{% endif %}
+          <p class="text-muted mb-0"><i class="fa-solid fa-circle-info me-1"></i>Solo puede registrar notas en citas suyas con este paciente
+          que estén ocurriendo <strong>hoy</strong>, mientras esté dentro de su turno de atención (y que no requieran reprogramación).</p>{% endif %}
+      </div>
+    </div>
+    <h6 class="fw-bold text-secondary mb-3">Evoluciones registradas</h6>
+    {% for n in notas %}
+      <div class="timeline-note fade-up{{ '' if n.vigente else ' opacity-75' }}">
+        <div class="d-flex justify-content-between flex-wrap small text-muted mb-1">
+          <span><i class="fa-solid fa-user-doctor me-1"></i>{{ n.medico_nombre }} · cita del {{ n.cita_fecha|fecha_es }}
+            {% if n.corrige_a %}<span class="badge text-bg-info ms-1">Corrección de la nota #{{ n.corrige_a }}</span>{% endif %}
+            {% if n.anulada %}<span class="badge text-bg-danger ms-1">Anulada</span>{% elif n.corregida %}<span class="badge text-bg-secondary ms-1">Reemplazada por una corrección</span>{% endif %}
+          </span><span>#{{ n.id }} · {{ n.fecha_registro }}</span>
+        </div>
+        <p class="mb-2" style="white-space:pre-wrap{{ ';text-decoration:line-through' if n.anulada }}">{{ n.observacion }}</p>
+        {% if n.anulada %}<p class="small text-danger mb-2"><i class="fa-solid fa-ban me-1"></i>Motivo de anulación: {{ n.motivo_anulacion }}</p>{% endif %}
+        {% if n.vigente and n.registrado_por == session.user_id %}
+          {% if n.corregible %}
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#ed{{ n.id }}"><i class="fa-solid fa-pen"></i> Corregir</button>
+          {% else %}
+          <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="{{ n.motivo_bloqueo }}"><button class="btn btn-sm btn-outline-secondary" type="button" disabled><i class="fa-solid fa-pen"></i> Corregir</button></span>
+          {% endif %}
+          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#an{{ n.id }}"><i class="fa-solid fa-ban"></i> Anular</button>
+          <div class="collapse mt-2" id="ed{{ n.id }}">
+            <form method="post" action="{{ url_for('profesional.historial_editar', hid=n.id) }}">
+              {{ csrf_field() }}
+              <p class="small text-muted mb-1">La nota original se conserva; se registrará una nota de corrección.</p>
+              <textarea name="observacion" rows="3" class="form-control mb-2" required minlength="5">{{ n.observacion }}</textarea>
+              <button class="btn btn-sm btn-brand">Guardar corrección</button>
+            </form>
+          </div>
+          <div class="collapse mt-2" id="an{{ n.id }}">
+            <form method="post" action="{{ url_for('profesional.historial_eliminar', hid=n.id) }}" data-confirm="¿Anular esta nota? Seguirá visible como anulada.">
+              {{ csrf_field() }}
+              <input name="motivo" class="form-control form-control-sm mb-2" required minlength="5" maxlength="255" placeholder="Motivo de la anulación (obligatorio)">
+              <button class="btn btn-sm btn-danger">Anular nota</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    {% else %}<div class="empty-state"><i class="fa-regular fa-note-sticky"></i>No hay notas clínicas registradas.</div>{% endfor %}
+  </div>
+  <div class="col-lg-5">
+    <div class="card fade-up"><div class="card-header"><h5><i class="fa-solid fa-calendar-check me-2"></i>Historial de citas</h5></div>
+      <ul class="list-group list-group-flush">
+        {% for c in citas %}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center"><strong class="small">{{ c.fecha|fecha_es }} · {{ c.hora }}</strong>{{ estado_badge(c.estado) }}</div>
+            <div class="small text-muted">{{ c.profesional_nombre }} ({{ c.especialidad }})</div>
+            <div class="small">{{ c.motivo }}</div>
+          </li>
+        {% else %}<li class="list-group-item text-muted">Sin citas registradas.</li>{% endfor %}
+      </ul></div>
+  </div>
+</div>
+{% endblock %}

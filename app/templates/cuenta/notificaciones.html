@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, paginacion %}
+{% block title %}Notificaciones{% endblock %}
+{% block content %}
+{% call page_header('fa-bell', 'Notificaciones', 'Avisos sobre sus citas y su cuenta.') %}
+  <form method="post" action="{{ url_for('cuenta.leer_todas') }}">{{ csrf_field() }}
+    <button class="btn btn-brand" type="submit" {{ 'disabled' if not total_no_leidas }}><i class="fa-solid fa-check-double me-1"></i>Marcar todas como leídas</button>
+  </form>
+  <form method="post" action="{{ url_for('cuenta.limpiar') }}" data-confirm="¿Eliminar todas las notificaciones ya leídas?">{{ csrf_field() }}
+    <button class="btn btn-outline-danger" type="submit"><i class="fa-solid fa-broom me-1"></i>Limpiar leídas</button>
+  </form>
+{% endcall %}
+
+<div class="card fade-up">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <ul class="nav nav-pills gap-1">
+      <li class="nav-item"><a class="nav-link {{ '' if solo else 'active' }}" href="{{ url_for('cuenta.notificaciones') }}">Todas</a></li>
+      <li class="nav-item"><a class="nav-link {{ 'active' if solo }}" href="{{ url_for('cuenta.notificaciones', filtro='no_leidas') }}">No leídas {% if total_no_leidas %}<span class="badge rounded-pill text-bg-danger ms-1">{{ total_no_leidas }}</span>{% endif %}</a></li>
+    </ul>
+    <span class="small text-muted">{{ pag.total }} notificación(es)</span>
+  </div>
+  {% for n in items %}
+  <div class="notif-row {{ '' if n.leida else 'no-leida' }}">
+    <span class="notif-ic {{ n.clase }}"><i class="fa-solid {{ n.icono }}"></i></span>
+    <div class="flex-grow-1 min-w-0">
+      <div class="fw-semibold">{{ n.titulo }}{% if not n.leida %} <span class="badge text-bg-primary ms-1">Nueva</span>{% endif %}</div>
+      <div class="text-muted small">{{ n.mensaje }}</div>
+      <div class="small text-muted mt-1"><i class="fa-regular fa-clock me-1"></i>{{ n.created_at[:16] }}</div>
+    </div>
+    <div class="d-flex gap-1 flex-none">
+      {% if n.url %}
+      <form method="post" action="{{ url_for('cuenta.abrir', nid=n.id) }}">{{ csrf_field() }}
+        <button class="btn btn-sm btn-outline-brand" type="submit" title="Abrir"><i class="fa-solid fa-arrow-up-right-from-square"></i></button></form>
+      {% endif %}
+      {% if not n.leida %}
+      <form method="post" action="{{ url_for('cuenta.leida', nid=n.id) }}">{{ csrf_field() }}
+        <button class="btn btn-sm btn-outline-secondary" type="submit" title="Marcar como leída"><i class="fa-solid fa-check"></i></button></form>
+      {% endif %}
+      <form method="post" action="{{ url_for('cuenta.eliminar', nid=n.id) }}">{{ csrf_field() }}
+        <button class="btn btn-sm btn-outline-danger" type="submit" title="Eliminar"><i class="fa-solid fa-trash"></i></button></form>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state"><i class="fa-regular fa-bell-slash"></i>{{ 'No tiene notificaciones sin leer.' if solo else 'No tiene notificaciones todavía.' }}</div>
+  {% endfor %}
+  {% if pag.pages > 1 %}<div class="card-footer bg-transparent">{{ paginacion(pag) }}</div>{% endif %}
+</div>
+{% endblock %}

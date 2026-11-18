@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, field %}
+{% block title %}{{ 'Editar' if p else 'Registrar' }} paciente{% endblock %}
+{% block content %}
+{% call page_header('fa-user-pen' if p else 'fa-user-plus', ('Editar paciente' if p else 'Registrar paciente (HU-01)'), 'Los campos con * son obligatorios.') %}
+  <a class="btn btn-outline-secondary" href="{{ url_for('recepcion.pacientes') }}"><i class="fa-solid fa-arrow-left me-1"></i>Volver</a>
+{% endcall %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card fade-up"><div class="card-body p-4">
+  <form method="post" class="needs-validation">
+    {{ csrf_field() }}
+    {{ field('Nombre completo', 'nombre', f.get('nombre'), rule='nombre') }}
+    <div class="row">
+      <div class="col-md-6">{{ field('Documento de identidad', 'documento', f.get('documento'), rule='documento') }}</div>
+      <div class="col-md-6">{{ field('Teléfono', 'telefono', f.get('telefono'), rule='telefono') }}</div>
+    </div>
+    {{ field('Correo electrónico', 'correo', f.get('correo'), type='email', rule='correo', hint='A este correo se enviarán confirmaciones y recordatorios.') }}
+    {{ field('Contraseña', 'password', '', type='password', rule='password', required=False,
+             hint=('Déjela vacía para no cambiarla.' if p else 'Si la deja vacía se genera una contraseña temporal.'), extra='autocomplete="new-password"') }}
+    <div class="d-flex gap-2 justify-content-end">
+      <a class="btn btn-outline-secondary" href="{{ url_for('recepcion.pacientes') }}">Cancelar</a>
+      <button class="btn btn-brand" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+    </div>
+  </form>
+</div></div></div></div>
+{% endblock %}

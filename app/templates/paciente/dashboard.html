@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, estado_badge, post_btn %}
+{% block title %}Mis citas{% endblock %}
+{% block content %}
+{% call page_header('fa-user', 'Portal del paciente', 'Solicite citas en línea (HU-03), reprograme o cancele (HU-04) y reciba recordatorios (HU-07).') %}
+  <span class="badge text-bg-warning fs-6"><i class="fa-solid fa-hourglass-half me-1"></i>{{ pendientes }} pendiente(s)</span>
+{% endcall %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card fade-up mb-4">
+      <div class="card-header"><h5><i class="fa-solid fa-calendar-plus me-2"></i>Solicitar cita en línea</h5></div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('paciente.solicitar') }}" class="needs-validation js-agenda-form">
+          {{ csrf_field() }}
+          <div class="mb-3"><label class="form-label" for="profesional_id">Profesional</label>
+            <select name="profesional_id" id="profesional_id" class="form-select" required>
+              <option value="">-- Elija especialista --</option>
+              {% for p in profesionales %}<option value="{{ p.id }}">{{ p.nombre }} · {{ p.especialidad }}</option>{% endfor %}
+            </select><div class="invalid-feedback"></div></div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label" for="fecha">Fecha</label>
+              <input type="date" id="fecha" name="fecha" class="form-control" required data-min-today><div class="invalid-feedback"></div></div>
+            <div class="col-md-6 mb-3"><label class="form-label" for="hora">Hora disponible</label>
+              <select id="hora" name="hora" class="form-select" required><option value="">-- Elija profesional y fecha --</option></select><div class="invalid-feedback"></div></div>
+            <div class="col-12"><div class="slot-msg mb-2" aria-live="polite"></div></div>
+          </div>
+          <div class="mb-3"><label class="form-label" for="motivo">Motivo de la consulta</label>
+            <input class="form-control" id="motivo" name="motivo" required minlength="3" maxlength="255" placeholder="Síntomas o tipo de control"><div class="invalid-feedback"></div></div>
+          <button class="btn btn-brand w-100" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Solicitar cita</button>
+        </form>
+      </div>
+    </div>
+    <div class="card fade-up">
+      <div class="card-header"><h5><i class="fa-solid fa-envelope me-2"></i>Correos enviados</h5></div>
+      <ul class="list-group list-group-flush small">
+        {% for n in notificaciones %}
+          <li class="list-group-item"><div class="fw-semibold"><a href="{{ url_for('correos.vista_previa', rid=n.id) }}">{{ n.asunto }}</a></div>
+            <div class="text-muted">Cita del {{ n.fecha|fecha_es }} · {{ n.hora }}</div>
+            <span class="badge badge-modo-{{ n.modo }}">{{ {'smtp':'Enviado a su correo','demo':'Demostración','error':'No se pudo enviar','pendiente':'En cola'}.get(n.modo, n.modo) }}</span>
+            <span class="text-muted ms-1">{{ n.enviado_en }}</span></li>
+        {% else %}<li class="list-group-item text-muted">Aún no se han enviado correos.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card fade-up">
+      <div class="card-header"><h5><i class="fa-solid fa-calendar-check me-2"></i>Mis citas</h5></div>
+      <div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th>Fecha / Hora</th><th>Profesional</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+        {% for c in citas %}
+          <tr>
+            <td class="text-nowrap">{{ c.fecha|fecha_es }}<br><small class="text-muted">{{ c.hora }}</small></td>
+            <td>{{ c.profesional_nombre }}<br><small class="text-muted">{{ c.especialidad }}</small><br><small>{{ c.motivo }}</small></td>
+            <td>{{ estado_badge(c.estado) }}{% if c.requiere_reprogramacion and c.estado == 'Pendiente' %}<br><span class="badge text-bg-danger mt-1">Debe reprogramarse</span><br><small class="text-muted">El profesional cambió su horario: elija una nueva hora o comuníquese con recepción.</small>{% endif %}</td>
+            <td class="text-end text-nowrap">
+              {% if c.estado == 'Pendiente' %}
+                {{ post_btn(url_for('paciente.recordatorio_cita', cid=c.id), '', 'btn-outline-info', 'fa-bell', title='Enviarme un recordatorio por correo (HU-07)') }}
+                <a class="btn btn-sm btn-outline-brand" href="{{ url_for('paciente.calendario', cid=c.id) }}" title="Agregar a mi calendario (.ics)"><i class="fa-solid fa-calendar-plus"></i></a>
+                <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#repro{{ c.id }}" title="Reprogramar"><i class="fa-solid fa-calendar-days"></i></button>
+                {{ post_btn(url_for('paciente.cancelar', cid=c.id), '', 'btn-outline-danger', 'fa-xmark', '¿Está seguro de cancelar su cita?', 'Cancelar cita') }}
+              {% else %}<span class="text-muted small">—</span>{% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4"><div class="empty-state"><i class="fa-regular fa-calendar"></i>Aún no tiene citas. ¡Solicite la primera!</div></td></tr>
+        {% endfor %}
+        </tbody></table></div>
+      <div class="card-footer bg-transparent small text-muted"><i class="fa-solid fa-circle-info me-1"></i>Puede cancelar o reprogramar con al menos {{ horas }} horas de anticipación.</div>
+    </div>
+  </div>
+</div>
+
+{% for c in citas if c.estado == 'Pendiente' %}
+<div class="modal fade" id="repro{{ c.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <form method="post" action="{{ url_for('paciente.reprogramar', cid=c.id) }}" class="needs-validation js-agenda-form" data-profesional="{{ c.profesional_id }}" data-excluir="{{ c.id }}">
+      {{ csrf_field() }}
+      <div class="modal-header"><h5 class="modal-title fw-bold">Reprogramar cita (HU-04)</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+      <div class="modal-body">
+        <p class="small text-muted">Con {{ c.profesional_nombre }}. Actual: {{ c.fecha|fecha_es }} {{ c.hora }}</p>
+        <div class="mb-3"><label class="form-label">Nueva fecha</label><input type="date" name="nueva_fecha" class="form-control" required data-min-today value="{{ c.fecha }}"><div class="invalid-feedback"></div></div>
+        <div class="mb-2"><label class="form-label">Nueva hora disponible</label>
+          <select name="nueva_hora" class="form-select" required data-actual="{{ c.hora }}"><option value="">Cargando…</option></select><div class="invalid-feedback"></div></div>
+        <div class="slot-msg" aria-live="polite"></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button><button class="btn btn-brand" type="submit">Guardar nueva fecha</button></div>
+    </form>
+  </div></div>
+</div>
+{% endfor %}
+{% endblock %}

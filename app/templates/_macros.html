@@ -1,0 +1,72 @@
+{# Macros reutilizables de interfaz #}
+{% macro estado_badge(e) -%}
+<span class="badge badge-estado estado-{{ e }}">{{ e }}</span>
+{%- endmacro %}
+
+{% macro page_header(icon, titulo, subtitulo='') -%}
+<div class="page-header fade-up">
+  <div class="ph-icon"><i class="fa-solid {{ icon }}"></i></div>
+  <div>
+    <h1>{{ titulo }}</h1>
+    {% if subtitulo %}<p>{{ subtitulo }}</p>{% endif %}
+  </div>
+  <div class="ph-actions">{{ caller() if caller else '' }}</div>
+</div>
+{%- endmacro %}
+
+{% macro post_btn(url, label, cls='btn-outline-secondary', icon='', confirm='', title='', campos={}) -%}
+<form method="post" action="{{ url }}" class="d-inline"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>
+  {{ csrf_field() }}
+  {% for k, v in campos.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  <button type="submit" class="btn btn-sm {{ cls }}" title="{{ title or label }}">
+    {% if icon %}<i class="fa-solid {{ icon }}"></i>{% endif %}{% if label %}<span class="ms-1">{{ label }}</span>{% endif %}
+  </button>
+</form>
+{%- endmacro %}
+
+{% macro field(label, name, value='', type='text', rule='', required=True, placeholder='', extra='', id='', hint='') -%}
+<div class="mb-3">
+  <label class="form-label" for="{{ id or name }}">{{ label }}{% if required %} <span class="text-danger">*</span>{% endif %}</label>
+  <input type="{{ type }}" class="form-control" id="{{ id or name }}" name="{{ name }}"
+         value="{{ value if value is not none else '' }}" placeholder="{{ placeholder }}"
+         {% if rule %}data-rule="{{ rule }}"{% endif %} {% if required %}required{% endif %} {{ extra|safe }}>
+  <div class="invalid-feedback"></div>
+  {% if hint %}<div class="form-text">{{ hint }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro estado_menu(c, url, next='', estados=None) -%}
+<div class="dropdown d-inline">
+  <button class="btn btn-sm btn-outline-brand dropdown-toggle" type="button" data-bs-toggle="dropdown">Estado</button>
+  <ul class="dropdown-menu dropdown-menu-end shadow">
+    {% for e in (estados or ESTADOS) %}{% if e != c.estado %}
+    <li>
+      <form method="post" action="{{ url }}">
+        {{ csrf_field() }}<input type="hidden" name="estado" value="{{ e }}"><input type="hidden" name="next" value="{{ next }}">
+        <button class="dropdown-item" type="submit">Marcar {{ e|lower }}</button>
+      </form>
+    </li>
+    {% endif %}{% endfor %}
+  </ul>
+</div>
+{%- endmacro %}
+
+{% macro vacio(texto, icono='fa-inbox') -%}
+<div class="empty-state"><i class="fa-solid {{ icono }}"></i>{{ texto }}</div>
+{%- endmacro %}
+
+{# Paginación: recibe un utils.Pagina #}
+{% macro paginacion(pag) -%}
+{% if pag and pag.pages > 1 %}
+<nav aria-label="Paginación" class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+  <small class="text-muted">Página {{ pag.page }} de {{ pag.pages }} · {{ pag.total }} registro(s)</small>
+  <ul class="pagination pagination-sm mb-0">
+    <li class="page-item {{ '' if pag.tiene_anterior else 'disabled' }}"><a class="page-link" href="{{ pag.url(pag.page - 1) if pag.tiene_anterior else '#' }}">Anterior</a></li>
+    {% for n in range([1, pag.page - 2]|max, [pag.pages, pag.page + 2]|min + 1) %}
+      <li class="page-item {{ 'active' if n == pag.page }}"><a class="page-link" href="{{ pag.url(n) }}">{{ n }}</a></li>
+    {% endfor %}
+    <li class="page-item {{ '' if pag.tiene_siguiente else 'disabled' }}"><a class="page-link" href="{{ pag.url(pag.page + 1) if pag.tiene_siguiente else '#' }}">Siguiente</a></li>
+  </ul>
+</nav>
+{% elif pag %}<small class="text-muted">{{ pag.total }} registro(s)</small>{% endif %}
+{%- endmacro %}

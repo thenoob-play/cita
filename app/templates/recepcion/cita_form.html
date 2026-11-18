@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header %}
+{% block title %}{{ 'Editar' if c else 'Agendar' }} cita{% endblock %}
+{% block content %}
+{% set pac_sel = f.get('paciente_id') or request.args.get('paciente_id') %}
+{% call page_header('fa-calendar-pen' if c else 'fa-calendar-plus', ('Editar / reprogramar cita' if c else 'Agendar cita médica (HU-02)'), 'Solo se ofrecen horarios libres según el horario del profesional.') %}
+  <a class="btn btn-outline-secondary" href="{{ url_for('recepcion.citas') }}"><i class="fa-solid fa-arrow-left me-1"></i>Volver</a>
+{% endcall %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card fade-up"><div class="card-body p-4">
+  <form method="post" class="needs-validation js-agenda-form" {% if c %}data-excluir="{{ c.id }}"{% endif %}>
+    {{ csrf_field() }}
+    <div class="mb-3">
+      <label class="form-label" for="paciente_id">Paciente <span class="text-danger">*</span></label>
+      <input type="search" class="form-control form-control-sm mb-2" placeholder="Filtrar lista de pacientes…" data-filter-select="#paciente_id">
+      <select name="paciente_id" id="paciente_id" class="form-select" required>
+        <option value="">-- Seleccione un paciente --</option>
+        {% for p in pacientes %}<option value="{{ p.id }}" {{ 'selected' if pac_sel|string == p.id|string }}>{{ p.nombre }} (Doc: {{ p.documento }})</option>{% endfor %}
+      </select><div class="invalid-feedback"></div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="profesional_id">Profesional de la salud <span class="text-danger">*</span></label>
+      <select name="profesional_id" id="profesional_id" class="form-select" required>
+        <option value="">-- Seleccione un profesional --</option>
+        {% for p in profesionales %}<option value="{{ p.id }}" {{ 'selected' if f.get('profesional_id')|string == p.id|string }}>{{ p.nombre }} · {{ p.especialidad }}</option>{% endfor %}
+      </select><div class="invalid-feedback"></div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3"><label class="form-label" for="fecha">Fecha <span class="text-danger">*</span></label>
+        <input type="date" id="fecha" name="fecha" class="form-control" required data-min-today value="{{ f.get('fecha','') }}"><div class="invalid-feedback"></div></div>
+      <div class="col-md-6 mb-3"><label class="form-label" for="hora">Hora disponible <span class="text-danger">*</span></label>
+        <select id="hora" name="hora" class="form-select" required data-actual="{{ f.get('hora','')[:5] }}"><option value="">-- Elija profesional y fecha --</option></select><div class="invalid-feedback"></div></div>
+      <div class="col-12"><div class="slot-msg mb-3" aria-live="polite"></div></div>
+    </div>
+    <div class="mb-4"><label class="form-label" for="motivo">Motivo de consulta</label>
+      <input class="form-control" id="motivo" name="motivo" maxlength="255" value="{{ f.get('motivo') or 'Consulta general' }}"></div>
+    <div class="d-flex gap-2 justify-content-end">
+      <a class="btn btn-outline-secondary" href="{{ url_for('recepcion.citas') }}">Cancelar</a>
+      <button class="btn btn-brand" type="submit"><i class="fa-solid fa-check me-1"></i>{{ 'Guardar cambios' if c else 'Agendar cita' }}</button>
+    </div>
+  </form>
+</div></div></div></div>
+{% endblock %}

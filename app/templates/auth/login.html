@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesión{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card fade-up">
+    <div class="auth-side">
+      <h2 class="fw-bold mb-2"><i class="fa-solid fa-heart-pulse me-2"></i>CitasMédicas</h2>
+      <p class="opacity-75">Gestión integral de citas para consultorios y centros de salud.</p>
+      <div class="feature"><i class="fa-solid fa-calendar-check"></i><span>Agendamiento sin cruces de horario</span></div>
+      <div class="feature"><i class="fa-solid fa-envelope-circle-check"></i><span>Recordatorios automáticos por correo</span></div>
+      <div class="feature"><i class="fa-solid fa-file-medical"></i><span>Historial clínico por paciente</span></div>
+      <div class="feature"><i class="fa-solid fa-chart-pie"></i><span>Reportes y gráficos para administración</span></div>
+    </div>
+    <div class="auth-form">
+      <h3 class="fw-bold mb-1">Iniciar sesión</h3>
+      <p class="text-muted small mb-4">Ingrese con su cuenta institucional.</p>
+      <form method="post" class="needs-validation">
+        {{ csrf_field() }}
+        <div class="mb-3">
+          <label class="form-label" for="correo">Correo electrónico</label>
+          <div class="input-icon"><i class="fa-solid fa-envelope"></i>
+            <input class="form-control" type="email" id="correo" name="correo" required data-rule="correo" placeholder="usuario@citas.com" autocomplete="username"></div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="password">Contraseña</label>
+          <div class="input-group">
+            <input class="form-control" type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password">
+            <button class="btn btn-outline-secondary" type="button" data-toggle-pw="#password" aria-label="Mostrar contraseña"><i class="fa-solid fa-eye"></i></button>
+          </div>
+        </div>
+        <button class="btn btn-brand w-100 py-2" type="submit"><i class="fa-solid fa-right-to-bracket me-2"></i>Ingresar</button>
+      </form>
+      <p class="text-end small mt-2 mb-0"><a href="{{ url_for('auth.recuperar') }}">¿Olvidó su contraseña?</a></p>
+      <p class="text-center small mt-3 mb-3">¿Es paciente y aún no tiene cuenta? <a href="{{ url_for('auth.registro') }}" class="fw-semibold">Regístrese aquí</a></p>
+      {% if modo_dev %}{# Solo con APP_ENV=development: nunca en producción #}
+      <div class="cred-box p-3">
+        <div class="fw-semibold text-secondary mb-1"><i class="fa-solid fa-circle-info me-1"></i>Cuentas de prueba (clic para llenar):</div>
+        <button type="button" data-cred="admin@citas.com|admin123"><strong>Administrador</strong> · admin@citas.com</button>
+        <button type="button" data-cred="recepcion@citas.com|recep123"><strong>Recepcionista</strong> · recepcion@citas.com</button>
+        <button type="button" data-cred="medico@citas.com|medico123"><strong>Profesional</strong> · medico@citas.com</button>
+        <button type="button" data-cred="paciente@citas.com|paciente123"><strong>Paciente</strong> · paciente@citas.com</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

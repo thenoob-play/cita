@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, estado_badge %}
+{% block title %}Mi agenda{% endblock %}
+{% block content %}
+{% call page_header('fa-user-doctor', 'Mi agenda', 'Agenda diaria (HU-06) e historial clínico de mis pacientes (HU-08).') %}{% endcall %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card fade-up">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h5><i class="fa-solid fa-calendar-day me-2"></i>{{ fecha|fecha_es }}{% if es_hoy %} <span class="badge text-bg-success ms-1">Hoy</span>{% endif %}</h5>
+        <form method="get" class="d-flex align-items-center gap-1">
+          <a class="btn btn-sm btn-outline-secondary" href="?fecha={{ anterior }}" title="Día anterior"><i class="fa-solid fa-chevron-left"></i></a>
+          <input type="date" class="form-control form-control-sm" name="fecha" value="{{ fecha }}" onchange="this.form.submit()">
+          <a class="btn btn-sm btn-outline-secondary" href="?fecha={{ siguiente }}" title="Día siguiente"><i class="fa-solid fa-chevron-right"></i></a>
+          <a class="btn btn-sm btn-brand" href="{{ url_for('profesional.agenda') }}">Hoy</a>
+        </form>
+      </div>
+      {% if es_hoy and franjas %}
+      <div class="card-body py-2 border-bottom small" role="status">
+        {% if turno %}
+          <div class="alert alert-success mb-0 py-2"><i class="fa-solid fa-circle-check me-1"></i><strong>Turno activo:</strong>
+            entrada {{ turno[0] }} · salida {{ turno[1] }}. Puede registrar atenciones y notas hasta las {{ turno[1] }}.</div>
+        {% else %}
+          <div class="alert alert-warning mb-0 py-2"><i class="fa-solid fa-clock me-1"></i><strong>Fuera de su horario ahora.</strong>
+            {{ motivo_turno }} No puede registrar atenciones ni notas clínicas hasta que empiece un turno.</div>
+        {% endif %}
+      </div>
+      {% endif %}
+      <div class="card-body py-2 border-bottom small">
+        {% if franjas %}
+          <i class="fa-regular fa-clock me-1 text-muted"></i><strong>Franjas de atención:</strong>
+          {% for ini, fin in franjas %}<span class="badge text-bg-body-tertiary border ms-1">{{ ini }} – {{ fin }}</span>{% endfor %}
+          {% if not es_hoy %}<span class="text-muted ms-2">Las citas solo se atienden el día de la cita.</span>{% endif %}
+        {% else %}
+          <div class="alert alert-secondary mb-0 py-2"><i class="fa-solid fa-moon me-1"></i><strong>{{ 'No atiende hoy' if es_hoy else 'No atiende este día' }}</strong>
+            — no hay bloques de atención; ninguna cita es accionable.</div>
+        {% endif %}
+      </div>
+      <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Hora</th><th>Paciente</th><th>Contacto</th><th>Motivo</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+        {% for c in citas %}
+          <tr class="{{ 'table-warning' if c.fuera_bloque or c.requiere_reprogramacion }}">
+            <td class="fw-bold text-nowrap" style="color:var(--brand)">{{ c.hora }}
+              {% if c.fuera_bloque %}<br><span class="badge text-bg-warning" title="La cita no cae dentro de una franja de atención">Fuera de franja</span>{% endif %}
+              {% if c.requiere_reprogramacion %}<br><span class="badge text-bg-danger" title="Un cambio de horario la dejó fuera: recepción debe reagendarla">Requiere reprogramación</span>{% endif %}
+            </td>
+            <td class="fw-semibold">{{ c.paciente_nombre }}<br><small class="text-muted fw-normal">Doc: {{ c.paciente_documento }}</small></td>
+            <td><small><i class="fa-solid fa-phone me-1 text-muted"></i>{{ c.paciente_telefono or '—' }}</small></td>
+            <td>{{ c.motivo }}</td>
+            <td>{{ estado_badge(c.estado) }}</td>
+            <td class="text-end text-nowrap">
+              {% for e, (ok, motivo) in c.acciones.items() %}
+                {% if ok %}
+                  <form method="post" action="{{ url_for('profesional.cita_estado', cid=c.id) }}" class="d-inline">
+                    {{ csrf_field() }}<input type="hidden" name="estado" value="{{ e }}"><input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                    <button class="btn btn-sm btn-outline-brand" type="submit">{{ e }}</button>
+                  </form>
+                {% else %}
+                  <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="{{ motivo }}">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" disabled aria-disabled="true">{{ e }}</button>
+                  </span>
+                {% endif %}
+              {% endfor %}
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('profesional.historial_paciente', paciente_id=c.paciente_id) }}" title="Historial clínico"><i class="fa-solid fa-file-medical"></i></a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6"><div class="empty-state"><i class="fa-regular fa-calendar"></i>No tiene citas para esta fecha.</div></td></tr>
+        {% endfor %}
+        </tbody></table></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card fade-up mb-4">
+      <div class="card-header"><h5><i class="fa-solid fa-clock-rotate-left me-2"></i>Mis pacientes (HU-08)</h5></div>
+      <div class="card-body">
+        <form method="get" data-live data-target="#pacientes" class="mb-3">
+          <div class="input-icon"><i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" name="q" class="form-control" placeholder="Buscar paciente…" value="{{ request.args.get('q','') }}"></div>
+        </form>
+        <div id="pacientes" class="live-region">{% include "profesional/_pacientes.html" %}</div>
+      </div>
+    </div>
+    <div class="card fade-up">
+      <div class="card-header"><h5><i class="fa-regular fa-clock me-2"></i>Mi horario semanal</h5></div>
+      <ul class="list-group list-group-flush small">
+        {% for h in horarios %}<li class="list-group-item d-flex justify-content-between"><span class="fw-semibold">{{ DIAS[h.dia_semana] }}</span>
+          <span>{{ h.hora_inicio }} – {{ h.hora_fin }}{% if h.vigente_desde or h.vigente_hasta %}<br><small class="text-muted">{{ 'desde ' ~ (h.vigente_desde|fecha_es) if h.vigente_desde }}{{ ' hasta ' ~ (h.vigente_hasta|fecha_es) if h.vigente_hasta }}</small>{% endif %}</span></li>
+        {% else %}<li class="list-group-item text-muted">Sin horario definido. Solicite al administrador configurarlo.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

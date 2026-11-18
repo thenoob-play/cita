@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, estado_badge %}
+{% block title %}Forzar atención{% endblock %}
+{% block content %}
+{% call page_header('fa-user-shield', 'Forzar atención (override de administrador)', 'Queda registrado en auditoría con override = 1') %}
+  <a class="btn btn-outline-secondary" href="{{ url_for('recepcion.citas') }}"><i class="fa-solid fa-arrow-left me-1"></i>Volver</a>
+{% endcall %}
+<div class="row justify-content-center"><div class="col-lg-7">
+  <div class="card fade-up">
+    <div class="card-body">
+      <p class="mb-1"><strong>{{ c.fecha|fecha_es }} · {{ c.hora }}</strong> {{ estado_badge(c.estado) }}
+        {% if c.requiere_reprogramacion %}<span class="badge text-bg-danger">Requiere reprogramación</span>{% endif %}</p>
+      <p class="mb-3 small">{{ c.paciente_nombre }} con {{ c.profesional_nombre }}</p>
+      {% if bloqueo %}
+        <div class="alert alert-warning small"><i class="fa-solid fa-lock me-1"></i>Regla de atención incumplida: {{ bloqueo }}</div>
+      {% else %}
+        <div class="alert alert-info small">La cita cumple la regla de atención: lo normal es que la registre el profesional asignado.</div>
+      {% endif %}
+      <form method="post" class="needs-validation">
+        {{ csrf_field() }}
+        <div class="mb-3"><label class="form-label">Nuevo estado</label>
+          <select name="estado" class="form-select" required>{% for e in estados if e != c.estado %}<option>{{ e }}</option>{% endfor %}</select></div>
+        <div class="mb-3"><label class="form-label">Motivo (obligatorio)</label>
+          <textarea name="motivo" rows="2" class="form-control" required minlength="5" maxlength="255" placeholder="Por qué se registra fuera de la regla"></textarea></div>
+        <button class="btn btn-warning" type="submit"><i class="fa-solid fa-user-shield me-1"></i>Forzar atención</button>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

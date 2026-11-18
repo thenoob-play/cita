@@ -1,0 +1,33 @@
+{% from "_macros.html" import estado_badge %}
+<script id="chart-data" type="application/json">{{ {'estados': {'labels': por_estado.keys()|list, 'values': por_estado.values()|list}, 'profesionales': {'labels': por_prof|map(attribute='nombre')|list, 'values': por_prof|map(attribute='total')|list}}|tojson }}</script>
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <span class="badge text-bg-dark fs-6">Total: {{ total_filtro if total_filtro is defined else citas|length }}</span>
+  {% for e, n in por_estado.items() %}<span class="badge badge-estado estado-{{ e }} fs-6">{{ e }}: {{ n }}</span>{% endfor %}
+</div>
+{% if total_filtro is defined and total_filtro > citas|length %}
+<div class="alert alert-warning py-2 small"><i class="fa-solid fa-triangle-exclamation me-1"></i>
+  La tabla muestra las {{ citas|length }} citas más recientes de {{ total_filtro }}. Refine los filtros o exporte el CSV
+  (el CSV avisa si también se trunca).</div>
+{% endif %}
+<div class="row g-3 mb-4">
+  <div class="col-md-5"><div class="chart-box"><canvas id="chartEstados"></canvas></div></div>
+  <div class="col-md-7"><div class="chart-box"><canvas id="chartProfesionales"></canvas></div></div>
+</div>
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead><tr><th>Fecha / Hora</th><th>Paciente</th><th>Profesional</th><th>Motivo</th><th>Estado</th></tr></thead>
+    <tbody>
+    {% for c in citas %}
+      <tr>
+        <td>{{ c.fecha|fecha_es }}<br><small class="text-muted">{{ c.hora }}</small></td>
+        <td>{{ c.paciente_nombre }}<br><small class="text-muted">{{ c.paciente_documento }}</small></td>
+        <td>{{ c.profesional_nombre }}<br><small class="text-muted">{{ c.especialidad }}</small></td>
+        <td>{{ c.motivo }}</td>
+        <td>{{ estado_badge(c.estado) }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-magnifying-glass-chart"></i>No hay citas con los filtros seleccionados.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

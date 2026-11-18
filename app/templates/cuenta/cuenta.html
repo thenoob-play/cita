@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, field %}
+{% block title %}Mi cuenta{% endblock %}
+{% block content %}
+{% call page_header('fa-user-gear', 'Mi cuenta', 'Datos personales, seguridad, preferencias de la interfaz y actividad reciente.') %}
+  <a class="btn btn-outline-brand" href="{{ url_for('cuenta.exportar') }}"><i class="fa-solid fa-download me-1"></i>Descargar mis datos</a>
+{% endcall %}
+{% set partes = (u.nombre or '').split() %}
+<div class="row g-4">
+  <!-- Tarjeta de perfil -->
+  <div class="col-lg-4">
+    <div class="card perfil-card fade-up mb-4">
+      <div class="perfil-banner"></div>
+      <div class="card-body pt-2">
+        <span class="avatar avatar-lg">{{ ((partes[0][0] if partes else '?') ~ (partes[1][0] if partes|length > 1 else ''))|upper }}</span>
+        <h5 class="fw-bold mt-2 mb-1">{{ u.nombre }}</h5>
+        <span class="badge badge-rol px-3 py-2">{{ u.rol }}</span>
+        {% if u.especialidad %}<div class="small text-muted mt-1"><i class="fa-solid fa-stethoscope me-1"></i>{{ u.especialidad }}</div>{% endif %}
+        <ul class="perfil-datos mt-3">
+          <li><span><i class="fa-regular fa-id-card me-1"></i>Documento</span><strong>{{ u.documento }}</strong></li>
+          <li><span><i class="fa-regular fa-envelope me-1"></i>Correo</span><strong>{{ u.correo }}</strong></li>
+          <li><span><i class="fa-solid fa-phone me-1"></i>Teléfono</span><strong>{{ u.telefono or '—' }}</strong></li>
+          <li><span><i class="fa-regular fa-calendar me-1"></i>Miembro desde</span><strong>{{ (u.created_at or '')[:10]|fecha_es }}</strong></li>
+          <li><span><i class="fa-solid fa-clock-rotate-left me-1"></i>Acceso anterior</span><strong>{{ acceso_anterior or 'Primer ingreso' }}</strong></li>
+        </ul>
+      </div>
+    </div>
+    {% if resumen %}
+    <div class="card fade-up">
+      <div class="card-header"><h6><i class="fa-solid fa-chart-simple me-2"></i>Resumen de mis citas</h6></div>
+      <div class="card-body mini-stats">
+        <div><b class="text-warning">{{ resumen.Pendiente }}</b><small>Pendientes</small></div>
+        <div><b class="text-success">{{ resumen.Atendida }}</b><small>Atendidas</small></div>
+        <div><b class="text-danger">{{ resumen.Cancelada }}</b><small>Canceladas</small></div>
+        <div><b class="text-secondary">{{ resumen.Inasistida }}</b><small>Inasistidas</small></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Pestañas -->
+  <div class="col-lg-8">
+    <div class="card fade-up">
+      <div class="card-header">
+        <ul class="nav nav-pills gap-1 flex-wrap" role="tablist">
+          {% for k, ic, lbl in [('perfil','fa-user','Datos personales'), ('seguridad','fa-shield-halved','Seguridad'), ('preferencias','fa-sliders','Preferencias'), ('actividad','fa-clock-rotate-left','Actividad')] %}
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if tab == k }}" data-bs-toggle="pill" data-bs-target="#tab-{{ k }}" type="button" role="tab"><i class="fa-solid {{ ic }} me-1"></i>{{ lbl }}</button>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="card-body p-4 tab-content">
+        <!-- Datos personales -->
+        <div class="tab-pane fade {{ 'show active' if tab == 'perfil' }}" id="tab-perfil" role="tabpanel">
+          <form method="post" action="{{ url_for('cuenta.perfil') }}" class="needs-validation">
+            {{ csrf_field() }}
+            {{ field('Nombre completo', 'nombre', f.get('nombre'), rule='nombre') }}
+            <div class="row">
+              <div class="col-md-6"><div class="mb-3"><label class="form-label">Documento</label><input class="form-control" value="{{ u.documento }}" disabled><div class="form-text">Solo el personal autorizado puede modificarlo.</div></div></div>
+              <div class="col-md-6">{{ field('Teléfono', 'telefono', f.get('telefono'), rule='telefono', required=(u.rol == 'paciente')) }}</div>
+            </div>
+            {{ field('Correo electrónico', 'correo', f.get('correo'), type='email', rule='correo', hint='Aquí recibirá confirmaciones, recordatorios y enlaces de recuperación.') }}
+            <div class="text-end"><button class="btn btn-brand" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios</button></div>
+          </form>
+        </div>
+
+        <!-- Seguridad -->
+        <div class="tab-pane fade {{ 'show active' if tab == 'seguridad' }}" id="tab-seguridad" role="tabpanel">
+          <h6 class="fw-bold mb-3">Cambiar contraseña</h6>
+          <form method="post" action="{{ url_for('cuenta.password') }}" class="needs-validation">
+            {{ csrf_field() }}
+            <div class="mb-3">
+              <label class="form-label" for="password_actual">Contraseña actual <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="password" class="form-control" id="password_actual" name="password_actual" required autocomplete="current-password">
+                <button class="btn btn-outline-secondary" type="button" data-toggle-pw="#password_actual" aria-label="Mostrar contraseña"><i class="fa-solid fa-eye"></i></button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">{{ field('Nueva contraseña', 'password', '', type='password', rule='password', extra='data-strength="#meter" autocomplete="new-password"') }}
+                <div class="pw-meter" id="meter" style="margin-top:-.6rem;margin-bottom:1rem"><span></span></div></div>
+              <div class="col-md-6">{{ field('Repetir nueva contraseña', 'password2', '', type='password', extra='data-match="#password" autocomplete="new-password"') }}</div>
+            </div>
+            <div class="text-end"><button class="btn btn-brand" type="submit"><i class="fa-solid fa-key me-1"></i>Actualizar contraseña</button></div>
+          </form>
+          <hr class="my-4">
+          <h6 class="fw-bold mb-2">Recomendaciones</h6>
+          <ul class="small text-muted mb-4">
+            <li>Use al menos 8 caracteres combinando letras, números y símbolos.</li>
+            <li>No reutilice la contraseña de su correo u otros servicios.</li>
+            <li>Si olvida su contraseña puede recuperarla desde la pantalla de inicio de sesión.</li>
+          </ul>
+          <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between p-3 rounded-3 border">
+            <div><div class="fw-semibold">Cerrar sesión en este dispositivo</div><div class="small text-muted">Recomendado si usa un equipo compartido.</div></div>
+            <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_field() }}<button class="btn btn-outline-danger" type="submit"><i class="fa-solid fa-right-from-bracket me-1"></i>Cerrar sesión</button></form>
+          </div>
+        </div>
+
+        <!-- Preferencias -->
+        <div class="tab-pane fade {{ 'show active' if tab == 'preferencias' }}" id="tab-preferencias" role="tabpanel">
+          <h6 class="fw-bold mb-3">Apariencia</h6>
+          <div class="opcion-tema mb-4" role="radiogroup" aria-label="Tema">
+            <div><input type="radio" name="pref-tema" id="t-claro" value="claro"><label for="t-claro"><i class="fa-solid fa-sun"></i>Claro</label></div>
+            <div><input type="radio" name="pref-tema" id="t-oscuro" value="oscuro"><label for="t-oscuro"><i class="fa-solid fa-moon"></i>Oscuro</label></div>
+            <div><input type="radio" name="pref-tema" id="t-sistema" value="sistema"><label for="t-sistema"><i class="fa-solid fa-desktop"></i>Según el sistema</label></div>
+          </div>
+          <h6 class="fw-bold mb-3">Menú lateral</h6>
+          <div class="form-check form-switch mb-4">
+            <input class="form-check-input" type="checkbox" role="switch" id="pref-compacto" name="pref-compacto">
+            <label class="form-check-label" for="pref-compacto">Menú compacto (solo iconos) en pantallas grandes</label>
+          </div>
+          <h6 class="fw-bold mb-3">Notificaciones</h6>
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-brand" href="{{ url_for('cuenta.notificaciones') }}"><i class="fa-solid fa-bell me-1"></i>Ver mis notificaciones</a>
+            <form method="post" action="{{ url_for('cuenta.leer_todas') }}">{{ csrf_field() }}<button class="btn btn-outline-secondary" type="submit"><i class="fa-solid fa-check-double me-1"></i>Marcar todas como leídas</button></form>
+          </div>
+          <p class="small text-muted mt-3 mb-0"><i class="fa-solid fa-circle-info me-1"></i>Las preferencias de apariencia se guardan en este navegador.</p>
+        </div>
+
+        <!-- Actividad -->
+        <div class="tab-pane fade {{ 'show active' if tab == 'actividad' }}" id="tab-actividad" role="tabpanel">
+          <h6 class="fw-bold mb-3">Mis últimas acciones en el sistema</h6>
+          {% if actividad %}
+          <ul class="actividad">
+            {% for a in actividad %}<li>{{ a.texto }}<small>{{ a.created_at }}</small></li>{% endfor %}
+          </ul>
+          {% else %}
+          <div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i>Aún no hay actividad registrada.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

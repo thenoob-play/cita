@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header %}
+{% block title %}Confirmar cambio de agenda{% endblock %}
+{% block content %}
+{% call page_header('fa-triangle-exclamation', 'El cambio afecta citas existentes', p.nombre ~ ' · ' ~ descripcion) %}{% endcall %}
+<div class="card fade-up border-warning">
+  <div class="card-body">
+    <p class="mb-2">Este cambio <strong>no se ha guardado</strong>. Dejaría <strong>{{ afectadas|length }} cita(s) pendiente(s)</strong> fuera de los bloques de atención:</p>
+    <div class="table-responsive"><table class="table table-sm align-middle">
+      <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th></tr></thead>
+      <tbody>{% for c in afectadas %}<tr><td>{{ c.fecha|fecha_es }}</td><td>{{ c.hora }}</td><td>{{ c.paciente_nombre }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="small text-muted">Lo recomendable es reagendarlas primero. Si confirma, el cambio se guarda y estas citas quedan marcadas como
+      <em>requiere reprogramación</em>: recepción las verá para reagendar, el profesional no podrá atenderlas y quedará registro en auditoría.</p>
+    <div class="d-flex gap-2">
+      <form method="post" action="{{ accion }}">
+        {{ csrf_field() }}
+        {% for k, v in campos.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+        <input type="hidden" name="confirmar" value="1">
+        <button class="btn btn-warning" type="submit"><i class="fa-solid fa-check me-1"></i>Confirmar y marcar {{ afectadas|length }} cita(s) para reprogramación</button>
+      </form>
+      <a class="btn btn-outline-secondary" href="{{ volver_a }}">Cancelar (no guardar)</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

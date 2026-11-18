@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, field %}
+{% block title %}Mi perfil{% endblock %}
+{% block content %}
+{% call page_header('fa-id-card', 'Mi perfil', 'Actualice sus datos de contacto o cambie su contraseña.') %}
+  <a class="btn btn-outline-secondary" href="{{ url_for('paciente.dashboard') }}"><i class="fa-solid fa-arrow-left me-1"></i>Volver</a>
+{% endcall %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card fade-up"><div class="card-body p-4">
+  <form method="post" class="needs-validation">
+    {{ csrf_field() }}
+    {{ field('Nombre completo', 'nombre', f.get('nombre'), rule='nombre') }}
+    <div class="row">
+      <div class="col-md-6"><div class="mb-3"><label class="form-label">Documento</label><input class="form-control" value="{{ u.documento }}" disabled></div></div>
+      <div class="col-md-6">{{ field('Teléfono', 'telefono', f.get('telefono'), rule='telefono') }}</div>
+    </div>
+    {{ field('Correo electrónico', 'correo', f.get('correo'), type='email', rule='correo', hint='Aquí recibirá confirmaciones y recordatorios.') }}
+    <hr><h6 class="fw-bold">Cambiar contraseña <small class="text-muted fw-normal">(opcional)</small></h6>
+    {{ field('Contraseña actual', 'password_actual', '', type='password', required=False, extra='autocomplete="current-password"') }}
+    <div class="row">
+      <div class="col-md-6">{{ field('Nueva contraseña', 'password', '', type='password', rule='password', required=False, extra='data-strength="#meter" autocomplete="new-password"') }}
+        <div class="pw-meter" id="meter" style="margin-top:-.6rem;margin-bottom:1rem"><span></span></div></div>
+      <div class="col-md-6">{{ field('Repetir nueva contraseña', 'password2', '', type='password', required=False, extra='data-match="#password" autocomplete="new-password"') }}</div>
+    </div>
+    <div class="text-end"><button class="btn btn-brand" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios</button></div>
+  </form>
+</div></div></div></div>
+{% endblock %}

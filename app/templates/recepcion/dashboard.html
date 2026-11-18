@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, estado_badge, estado_menu, post_btn %}
+{% block title %}Recepción{% endblock %}
+{% block content %}
+{% call page_header('fa-clipboard-user', 'Panel de recepción', 'Registro de pacientes (HU-01), agendamiento (HU-02) y control de estados (HU-09).') %}
+  <a class="btn btn-outline-brand" href="{{ url_for('recepcion.paciente_nuevo') }}"><i class="fa-solid fa-user-plus me-1"></i>Nuevo paciente</a>
+  <a class="btn btn-brand" href="{{ url_for('recepcion.cita_nueva') }}"><i class="fa-solid fa-calendar-plus me-1"></i>Agendar cita</a>
+{% endcall %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="card stat-card hover-lift"><div class="stat-icon ic-teal"><i class="fa-solid fa-calendar-day"></i></div><div><div class="stat-num">{{ citas_hoy|length }}</div><div class="stat-lbl">Citas de hoy</div></div></div></div>
+  <div class="col-md-4"><div class="card stat-card hover-lift"><div class="stat-icon ic-amber"><i class="fa-solid fa-hourglass-half"></i></div><div><div class="stat-num">{{ pendientes }}</div><div class="stat-lbl">Pendientes en total</div></div></div></div>
+  <div class="col-md-4"><div class="card stat-card hover-lift"><div class="stat-icon ic-blue"><i class="fa-solid fa-users"></i></div><div><div class="stat-num">{{ total_pacientes }}</div><div class="stat-lbl">Pacientes</div></div></div></div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-8">
+    {% if por_reprogramar %}
+    <div class="card fade-up mb-4 border-danger"><div class="card-header d-flex justify-content-between">
+        <h5 class="text-danger"><i class="fa-solid fa-calendar-days me-2"></i>Citas por reprogramar ({{ total_reprogramar }})</h5>
+        <a href="{{ url_for('recepcion.citas', reprogramar=1) }}" class="small">Ver todas</a></div>
+      <ul class="list-group list-group-flush">
+        {% for c in por_reprogramar %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div><strong>{{ c.fecha|fecha_es }} · {{ c.hora }}</strong><br><small class="text-muted">{{ c.paciente_nombre }} con {{ c.profesional_nombre }}</small></div>
+            <a class="btn btn-sm btn-outline-danger" href="{{ url_for('recepcion.cita_editar', cid=c.id) }}"><i class="fa-solid fa-calendar-days me-1"></i>Reagendar</a>
+          </li>
+        {% endfor %}
+      </ul></div>
+    {% endif %}
+    <div class="card fade-up mb-4"><div class="card-header"><h5><i class="fa-solid fa-calendar-day me-2"></i>Agenda de hoy</h5></div>
+      <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Hora</th><th>Paciente</th><th>Profesional</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+        {% for c in citas_hoy %}
+          <tr><td class="fw-bold text-nowrap">{{ c.hora }}</td><td>{{ c.paciente_nombre }}</td><td>{{ c.profesional_nombre }}</td>
+              <td>{{ estado_badge(c.estado) }}</td>
+              <td class="text-end">{% if c.estado != 'Cancelada' %}{{ estado_menu(c, url_for('recepcion.cita_estado', cid=c.id), url_for('recepcion.dashboard'), ['Cancelada']) }}{% endif %}</td></tr>
+        {% else %}<tr><td colspan="5"><div class="empty-state"><i class="fa-regular fa-calendar"></i>No hay citas programadas para hoy.</div></td></tr>{% endfor %}
+        </tbody></table></div></div>
+    <div class="card fade-up"><div class="card-header d-flex justify-content-between"><h5><i class="fa-solid fa-forward me-2"></i>Próximas citas pendientes</h5>
+        <a href="{{ url_for('recepcion.citas') }}" class="small">Ver todas</a></div>
+      <ul class="list-group list-group-flush">
+        {% for c in proximas %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div><strong>{{ c.fecha|fecha_es }} · {{ c.hora }}</strong><br><small class="text-muted">{{ c.paciente_nombre }} con {{ c.profesional_nombre }}</small></div>
+            <form method="post" action="{{ url_for('recepcion.cita_recordatorio', cid=c.id) }}">{{ csrf_field() }}<input type="hidden" name="next" value="{{ url_for('recepcion.dashboard') }}">
+              <button class="btn btn-sm btn-outline-info"><i class="fa-solid fa-paper-plane me-1"></i>Recordar</button></form>
+          </li>
+        {% else %}<li class="list-group-item text-muted">Sin citas pendientes futuras.</li>{% endfor %}
+      </ul></div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card fade-up"><div class="card-header"><h5><i class="fa-solid fa-envelope-open-text me-2"></i>Correos recientes (HU-07)</h5></div>
+      <ul class="list-group list-group-flush">
+        {% for r in recientes %}
+          <li class="list-group-item"><div class="small fw-semibold"><a href="{{ url_for('correos.vista_previa', rid=r.id) }}">{{ r.asunto }}</a></div>
+            <div class="small text-muted">{{ r.correo_destino }}</div>
+            <span class="badge badge-modo-{{ r.modo }}">{{ {'smtp':'Enviado','demo':'Demostración','error':'Error','pendiente':'En cola'}.get(r.modo, r.modo) }}</span>
+            <small class="text-muted ms-1">{{ r.enviado_en }}</small></li>
+        {% else %}<li class="list-group-item text-muted small">Aún no hay correos.</li>{% endfor %}
+      </ul>
+      <div class="card-body small text-muted border-top">
+        {% if smtp_activo %}<i class="fa-solid fa-circle-check text-success me-1"></i>SMTP configurado: los correos se envían realmente.
+        {% else %}<i class="fa-solid fa-circle-info me-1"></i>SMTP no configurado: modo demostración. Defina <code>MAIL_SERVER</code> en <code>.env</code> para envío real.{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

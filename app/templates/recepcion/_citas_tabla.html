@@ -1,0 +1,28 @@
+{% from "_macros.html" import paginacion, estado_badge, estado_menu, post_btn %}
+<div class="table-responsive"><table class="table table-hover align-middle">
+  <thead><tr><th>Fecha / Hora</th><th>Paciente</th><th>Profesional</th><th>Motivo</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+  <tbody>
+  {% for c in citas %}
+    <tr>
+      <td class="text-nowrap">{{ c.fecha|fecha_es }}<br><small class="text-muted">{{ c.hora }}</small></td>
+      <td class="fw-semibold">{{ c.paciente_nombre }}<br><small class="text-muted fw-normal">{{ c.paciente_correo }}</small></td>
+      <td>{{ c.profesional_nombre }}<br><small class="text-muted">{{ c.especialidad }}</small></td>
+      <td>{{ c.motivo }}</td>
+      <td>{{ estado_badge(c.estado) }}{% if c.requiere_reprogramacion and c.estado == 'Pendiente' %}<br><span class="badge text-bg-danger mt-1" title="Un cambio de horario la dejó fuera de la agenda del profesional">Requiere reprogramación</span>{% endif %}</td>
+      <td class="text-end text-nowrap">
+        {% if c.estado != 'Cancelada' %}{{ estado_menu(c, url_for('recepcion.cita_estado', cid=c.id), url_for('recepcion.citas'), ['Cancelada']) }}{% endif %}
+        {% if session.rol == 'administrador' %}<a class="btn btn-sm btn-outline-warning" href="{{ url_for('admin.atencion_forzada', cid=c.id) }}" title="Forzar atención (override con motivo)"><i class="fa-solid fa-user-shield"></i></a>{% endif %}
+        <form method="post" action="{{ url_for('recepcion.cita_recordatorio', cid=c.id) }}" class="d-inline">{{ csrf_field() }}
+          <input type="hidden" name="next" value="{{ url_for('recepcion.citas') }}">
+          <button class="btn btn-sm btn-outline-info" title="Enviar recordatorio por correo (HU-07)"><i class="fa-solid fa-paper-plane"></i></button></form>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('recepcion.cita_editar', cid=c.id) }}" title="Editar / reprogramar"><i class="fa-solid {{ 'fa-calendar-days' if c.requiere_reprogramacion else 'fa-pen' }}"></i></a>
+        <form method="post" action="{{ url_for('recepcion.cita_eliminar', cid=c.id) }}" class="d-inline" data-confirm="¿Eliminar esta cita definitivamente?">{{ csrf_field() }}
+          <input type="hidden" name="next" value="{{ url_for('recepcion.citas') }}">
+          <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fa-solid fa-trash"></i></button></form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6"><div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i>No se encontraron citas.</div></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{{ paginacion(pag) }}

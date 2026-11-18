@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header %}
+{% block title %}Pacientes{% endblock %}
+{% block content %}
+{% call page_header('fa-hospital-user', 'Pacientes', 'Registro, consulta, edición y baja de pacientes (HU-01).') %}
+  <a class="btn btn-brand" href="{{ url_for('recepcion.paciente_nuevo') }}"><i class="fa-solid fa-user-plus me-1"></i>Registrar paciente</a>
+{% endcall %}
+<div class="card fade-up"><div class="card-body">
+  <form method="get" class="mb-3" data-live data-target="#tabla">
+    <div class="input-icon"><i class="fa-solid fa-magnifying-glass"></i>
+      <input type="search" name="q" class="form-control" placeholder="Buscar por nombre, documento o correo…" value="{{ request.args.get('q','') }}"></div>
+  </form>
+  <div id="tabla" class="live-region">{% include "recepcion/_pacientes_tabla.html" %}</div>
+</div></div>
+{% endblock %}

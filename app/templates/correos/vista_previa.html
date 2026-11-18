@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header %}
+{% block title %}Vista previa de correo{% endblock %}
+{% block content %}
+{% call page_header('fa-envelope-open-text', 'Vista previa de correo', 'Registro #' ~ r.id ~ ' · ' ~ r.tipo) %}
+  <a class="btn btn-outline-secondary" href="javascript:history.back()"><i class="fa-solid fa-arrow-left me-1"></i>Volver</a>
+{% endcall %}
+<div class="card fade-up">
+  <div class="card-header d-flex flex-wrap justify-content-between gap-2">
+    <div><strong>Para:</strong> {{ r.correo_destino }}<br><strong>Asunto:</strong> {{ r.asunto }}</div>
+    <div class="text-end">
+      <span class="badge badge-modo-{{ r.modo }}">{{ {'smtp':'Enviado (SMTP)','demo':'Demostración (no enviado)','error':'Error','pendiente':'En cola'}.get(r.modo, r.modo) }}</span>
+      <div class="small text-muted">{{ r.enviado_en }}</div>
+    </div>
+  </div>
+  <div class="card-body"><pre class="mb-0" style="white-space:pre-wrap">{{ r.mensaje }}</pre></div>
+</div>
+{% endblock %}

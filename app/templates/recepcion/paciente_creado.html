@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header %}
+{% block title %}Paciente registrado{% endblock %}
+{% block content %}
+{% call page_header('fa-user-check', 'Paciente registrado (HU-01)', nombre ~ ' · ' ~ correo) %}{% endcall %}
+<div class="row justify-content-center"><div class="col-lg-6">
+  <div class="card fade-up border-warning">
+    <div class="card-body">
+      <h5 class="fw-bold"><i class="fa-solid fa-key me-2"></i>Contraseña temporal</h5>
+      <p class="small text-muted mb-2">Se muestra <strong>una sola vez</strong>: no queda guardada en la sesión ni en el sistema.
+        Entréguela al paciente y pídale que la cambie en <em>Mi perfil</em>.</p>
+      <div class="d-flex gap-2 align-items-center">
+        <code class="fs-4 px-3 py-2 bg-body-tertiary border rounded user-select-all" id="pw-temporal">{{ temporal }}</code>
+      </div>
+      <a href="{{ url_for('recepcion.pacientes') }}" class="btn btn-brand mt-3">Listo, volver a pacientes</a>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

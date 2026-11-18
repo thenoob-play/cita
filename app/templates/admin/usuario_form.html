@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, field %}
+{% block title %}{{ 'Editar' if u else 'Nuevo' }} usuario{% endblock %}
+{% block content %}
+{% call page_header('fa-user-pen' if u else 'fa-user-plus', ('Editar usuario' if u else 'Nuevo usuario'), 'Complete los datos. Los campos con * son obligatorios.') %}
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin.usuarios') }}"><i class="fa-solid fa-arrow-left me-1"></i>Volver</a>
+{% endcall %}
+<div class="row justify-content-center"><div class="col-lg-7">
+<div class="card fade-up"><div class="card-body p-4">
+  <form method="post" class="needs-validation">
+    {{ csrf_field() }}
+    {% if not u %}
+    <div class="mb-3">
+      <label class="form-label" for="rol">Rol <span class="text-danger">*</span></label>
+      <select class="form-select" id="rol" name="rol" required>
+        {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if f.get('rol', rol_inicial) == r }}>{{ r|capitalize }}</option>{% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <p class="mb-3">Rol: <span class="badge badge-rol">{{ u.rol }}</span></p>
+    {% endif %}
+    {{ field('Nombre completo', 'nombre', f.get('nombre'), rule='nombre') }}
+    <div class="row">
+      <div class="col-md-6">{{ field('Documento', 'documento', f.get('documento'), rule='documento') }}</div>
+      <div class="col-md-6">{{ field('Teléfono', 'telefono', f.get('telefono'), rule='telefono', required=False) }}</div>
+    </div>
+    {{ field('Correo electrónico', 'correo', f.get('correo'), type='email', rule='correo') }}
+    <div class="mb-3 {{ 'd-none' if (u and u.rol != 'profesional') }}" {% if not u %}data-show-if-rol="profesional"{% endif %}>
+      <label class="form-label" for="especialidad_id">Especialidad <span class="text-danger">*</span></label>
+      <select class="form-select" id="especialidad_id" name="especialidad_id" {{ 'required' if u and u.rol == 'profesional' }}>
+        <option value="">-- Seleccione --</option>
+        {% for e in especialidades %}<option value="{{ e.id }}" {{ 'selected' if f.get('especialidad_id')|string == e.id|string }}>{{ e.nombre }}</option>{% endfor %}
+      </select>
+      <div class="invalid-feedback"></div>
+      <div class="form-text">¿Falta una? <a href="{{ url_for('admin.especialidades') }}">Cree una especialidad</a>.</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        {{ field('Contraseña' ~ (' (dejar vacía para no cambiarla)' if u else ''), 'password', '', type='password', rule='password', required=(not u), extra='data-strength="#meter" autocomplete="new-password"') }}
+        <div class="pw-meter" id="meter" style="margin-top:-.6rem;margin-bottom:1rem"><span></span></div>
+      </div>
+      <div class="col-md-6">{{ field('Repetir contraseña', 'password2', '', type='password', required=(not u), extra='data-match="#password" autocomplete="new-password"') }}</div>
+    </div>
+    <div class="d-flex gap-2 justify-content-end">
+      <a class="btn btn-outline-secondary" href="{{ url_for('admin.usuarios') }}">Cancelar</a>
+      <button class="btn btn-brand" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+    </div>
+  </form>
+</div></div></div></div>
+{% endblock %}

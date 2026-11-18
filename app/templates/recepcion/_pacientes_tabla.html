@@ -1,0 +1,21 @@
+{% from "_macros.html" import paginacion, post_btn %}
+<div class="table-responsive"><table class="table table-hover align-middle">
+  <thead><tr><th>Paciente</th><th>Documento</th><th>Contacto</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+  <tbody>
+  {% for p in pacientes %}
+    <tr>
+      <td class="fw-semibold">{{ p.nombre }}</td><td>{{ p.documento }}</td>
+      <td><small><i class="fa-solid fa-phone me-1 text-muted"></i>{{ p.telefono or '—' }}</small><br><small><i class="fa-solid fa-envelope me-1 text-muted"></i>{{ p.correo }}</small></td>
+      <td>{% if p.activo %}<span class="badge text-bg-success">Activo</span>{% else %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}</td>
+      <td class="text-end text-nowrap">
+        <a class="btn btn-sm btn-outline-brand" href="{{ url_for('recepcion.cita_nueva', paciente_id=p.id) }}" title="Agendar cita"><i class="fa-solid fa-calendar-plus"></i></a>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('recepcion.paciente_editar', pid=p.id) }}" title="Editar"><i class="fa-solid fa-pen"></i></a>
+        {{ post_btn(url_for('recepcion.paciente_estado', pid=p.id), '', 'btn-outline-warning', 'fa-user-slash' if p.activo else 'fa-user-check', title='Desactivar' if p.activo else 'Activar') }}
+        {{ post_btn(url_for('recepcion.paciente_eliminar', pid=p.id), '', 'btn-outline-danger', 'fa-trash', '¿Eliminar a ' ~ p.nombre ~ '?', 'Eliminar') }}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-user-slash"></i>No se encontraron pacientes.</div></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{{ paginacion(pag) }}

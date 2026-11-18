@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Recuperar contraseña{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6 col-lg-5">
+  <div class="card fade-up"><div class="card-body p-4">
+    <h3 class="fw-bold mb-1"><i class="fa-solid fa-key me-2"></i>Recuperar contraseña</h3>
+    {% if enviado %}
+      <div class="alert alert-info mt-3">{{ mensaje }}</div>
+      {% if enlace_demo %}
+        <div class="alert alert-warning small">
+          <strong>Solo desarrollo (SMTP no configurado):</strong> este enlace no se guarda en ninguna parte;
+          ábralo ahora.<br><a href="{{ enlace_demo }}" class="alert-link text-break">{{ enlace_demo }}</a>
+        </div>
+      {% endif %}
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">Volver al inicio de sesión</a>
+    {% else %}
+      <p class="text-muted small">Escriba el correo de su cuenta y le enviaremos un enlace de un solo uso.</p>
+      <form method="post" class="needs-validation">
+        {{ csrf_field() }}
+        <div class="mb-3"><label class="form-label" for="correo">Correo electrónico</label>
+          <input class="form-control" type="email" id="correo" name="correo" required data-rule="correo" autocomplete="username"></div>
+        <button class="btn btn-brand w-100" type="submit">Enviar enlace</button>
+      </form>
+      <p class="text-center small mt-3 mb-0"><a href="{{ url_for('auth.login') }}">Volver</a></p>
+    {% endif %}
+  </div></div>
+</div></div>
+{% endblock %}

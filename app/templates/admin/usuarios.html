@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+{% call page_header('fa-users-gear', 'Gestión de usuarios', 'CRUD de administradores, recepcionistas, profesionales y pacientes.') %}
+  <a class="btn btn-brand" href="{{ url_for('admin.usuario_nuevo') }}"><i class="fa-solid fa-plus me-1"></i>Nuevo usuario</a>
+{% endcall %}
+<div class="card fade-up">
+  <div class="card-body">
+    <form method="get" class="row g-2 mb-3" data-live data-target="#tabla">
+      <div class="col-md-6"><div class="input-icon"><i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" name="q" class="form-control" placeholder="Buscar por nombre, documento o correo…" value="{{ request.args.get('q','') }}"></div></div>
+      <div class="col-md-3">
+        <select name="rol" class="form-select"><option value="">Todos los roles</option>
+          {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if request.args.get('rol') == r }}>{{ r|capitalize }}</option>{% endfor %}</select></div>
+    </form>
+    <div id="tabla" class="live-region">{% include "admin/_usuarios_tabla.html" %}</div>
+  </div>
+</div>
+{% endblock %}

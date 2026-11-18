@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header %}
+{% block title %}Citas{% endblock %}
+{% block content %}
+{% call page_header('fa-calendar-check', 'Gestión de citas', 'Agende, edite, cambie estados (HU-09) y envíe recordatorios (HU-07).') %}
+  <a class="btn btn-brand" href="{{ url_for('recepcion.cita_nueva') }}"><i class="fa-solid fa-calendar-plus me-1"></i>Agendar cita</a>
+{% endcall %}
+<div class="card fade-up"><div class="card-body">
+  <form method="get" class="row g-2 mb-3" data-live data-target="#tabla">
+    <div class="col-md-4"><div class="input-icon"><i class="fa-solid fa-magnifying-glass"></i>
+      <input type="search" name="q" class="form-control" placeholder="Paciente, documento, médico o motivo" value="{{ request.args.get('q','') }}"></div></div>
+    <div class="col-md-2"><select name="estado" class="form-select"><option value="">Todos los estados</option>
+      {% for e in ESTADOS %}<option {{ 'selected' if request.args.get('estado') == e }}>{{ e }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><select name="profesional_id" class="form-select"><option value="">Todos los profesionales</option>
+      {% for p in profesionales %}<option value="{{ p.id }}" {{ 'selected' if request.args.get('profesional_id') == p.id|string }}>{{ p.nombre }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-1"><input type="date" name="desde" class="form-control" title="Desde" value="{{ request.args.get('desde','') }}"></div>
+    <div class="col-6 col-md-1"><input type="date" name="hasta" class="form-control" title="Hasta" value="{{ request.args.get('hasta','') }}"></div>
+    <div class="col-md-12 order-last"><div class="form-check"><input class="form-check-input" type="checkbox" name="reprogramar" value="1" id="f-repro" {{ 'checked' if request.args.get('reprogramar') }}>
+      <label class="form-check-label small" for="f-repro">Solo citas que requieren reprogramación</label></div></div>
+    <div class="col-md-1"><button type="button" data-clear class="btn btn-outline-secondary w-100" title="Limpiar filtros"><i class="fa-solid fa-eraser"></i></button></div>
+  </form>
+  <div id="tabla" class="live-region">{% include "recepcion/_citas_tabla.html" %}</div>
+</div></div>
+{% endblock %}

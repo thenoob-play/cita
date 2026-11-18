@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Registro de paciente{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card fade-up">
+      <div class="card-body p-4 p-md-5">
+        <h3 class="fw-bold mb-1"><i class="fa-solid fa-user-plus text-success me-2"></i>Registro de paciente</h3>
+        <p class="text-muted small mb-4">Cree su cuenta para solicitar y gestionar sus citas en línea.</p>
+        <form method="post" class="needs-validation">
+          {{ csrf_field() }}
+          {{ field('Nombre completo', 'nombre', f.get('nombre'), rule='nombre', placeholder='Nombre y apellido') }}
+          <div class="row">
+            <div class="col-md-6">{{ field('Documento de identidad', 'documento', f.get('documento'), rule='documento', placeholder='Solo números') }}</div>
+            <div class="col-md-6">{{ field('Teléfono', 'telefono', f.get('telefono'), rule='telefono', placeholder='3001234567') }}</div>
+          </div>
+          {{ field('Correo electrónico', 'correo', f.get('correo'), type='email', rule='correo', placeholder='correo@ejemplo.com') }}
+          <div class="row">
+            <div class="col-md-6">
+              {{ field('Contraseña', 'password', '', type='password', rule='password', extra='data-strength="#meter" autocomplete="new-password"') }}
+              <div class="pw-meter" id="meter" style="margin-top:-.6rem;margin-bottom:1rem"><span></span></div>
+            </div>
+            <div class="col-md-6">{{ field('Repetir contraseña', 'password2', '', type='password', extra='data-match="#password" autocomplete="new-password"') }}</div>
+          </div>
+          <button class="btn btn-brand w-100 py-2" type="submit">Crear cuenta</button>
+        </form>
+        <p class="text-center small mt-3 mb-0">¿Ya tiene cuenta? <a href="{{ url_for('auth.login') }}">Iniciar sesión</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

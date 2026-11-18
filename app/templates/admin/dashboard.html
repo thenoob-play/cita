@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header, post_btn %}
+{% block title %}Panel de administración{% endblock %}
+{% block vendor_scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+{% call page_header('fa-user-shield', 'Panel de administración', 'Indicadores, reportes dinámicos (HU-10) y gestión del sistema.') %}
+  <a class="btn btn-brand btn-sm" href="{{ url_for('admin.usuario_nuevo', rol='profesional') }}"><i class="fa-solid fa-user-doctor me-1"></i>Nuevo profesional</a>
+  {{ post_btn(url_for('admin.recordatorios_manana'), 'Enviar recordatorios de mañana', 'btn-outline-brand', 'fa-paper-plane', 'Enviar recordatorios a las citas pendientes de mañana?') }}
+{% endcall %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card stat-card hover-lift"><div class="stat-icon ic-teal"><i class="fa-solid fa-calendar-check"></i></div><div><div class="stat-num">{{ total_citas }}</div><div class="stat-lbl">Citas totales</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card hover-lift"><div class="stat-icon ic-amber"><i class="fa-solid fa-hourglass-half"></i></div><div><div class="stat-num">{{ pendientes }}</div><div class="stat-lbl">Pendientes</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card hover-lift"><div class="stat-icon ic-blue"><i class="fa-solid fa-users"></i></div><div><div class="stat-num">{{ total_pacientes }}</div><div class="stat-lbl">Pacientes</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card hover-lift"><div class="stat-icon ic-violet"><i class="fa-solid fa-user-doctor"></i></div><div><div class="stat-num">{{ total_profesionales }}</div><div class="stat-lbl">Profesionales</div></div></div></div>
+</div>
+
+<div class="card mb-4 fade-up">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h5><i class="fa-solid fa-chart-line me-2"></i>Reportes de citas (HU-10)</h5>
+    <span class="badge {{ 'badge-modo-smtp' if smtp_activo else 'badge-modo-demo' }}">
+      <i class="fa-solid fa-envelope me-1"></i>Correo: {{ 'SMTP activo (envío real)' if smtp_activo else 'modo demostración' }}</span>
+  </div>
+  <div class="card-body">
+    <form method="get" action="{{ url_for('admin.dashboard') }}" class="row g-3 mb-4" data-live data-target="#reporte">
+      <div class="col-md-3">
+        <label class="form-label">Periodo</label>
+        <select name="periodo" class="form-select">
+          {% for v, t in [('todos','Todos los registros'),('hoy','Hoy'),('proximos7','Próximos 7 días'),('ultimos7','Últimos 7 días'),('mes','Mes actual'),('rango','Rango personalizado')] %}
+          <option value="{{ v }}" {{ 'selected' if request.args.get('periodo','todos') == v }}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 rango-fechas {{ '' if request.args.get('periodo') == 'rango' else 'd-none' }}">
+        <label class="form-label">Desde</label><input type="date" name="desde" class="form-control" value="{{ request.args.get('desde','') }}">
+      </div>
+      <div class="col-md-3 rango-fechas {{ '' if request.args.get('periodo') == 'rango' else 'd-none' }}">
+        <label class="form-label">Hasta</label><input type="date" name="hasta" class="form-control" value="{{ request.args.get('hasta','') }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Profesional</label>
+        <select name="profesional_id" class="form-select">
+          <option value="">Todos</option>
+          {% for p in profesionales %}<option value="{{ p.id }}" {{ 'selected' if request.args.get('profesional_id') == p.id|string }}>{{ p.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Estado</label>
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          {% for e in ESTADOS %}<option {{ 'selected' if request.args.get('estado') == e }}>{{ e }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Buscar</label>
+        <div class="input-icon"><i class="fa-solid fa-magnifying-glass"></i>
+          <input type="search" name="q" class="form-control" placeholder="Paciente, documento, médico o motivo" value="{{ request.args.get('q','') }}"></div>
+      </div>
+      <div class="col-md-auto d-flex align-items-end gap-2">
+        <button type="button" data-clear class="btn btn-outline-secondary"><i class="fa-solid fa-eraser me-1"></i>Limpiar</button>
+        <button type="submit" data-export formaction="{{ url_for('admin.reporte_csv') }}" class="btn btn-brand"><i class="fa-solid fa-file-csv me-1"></i>Exportar CSV</button>
+      </div>
+    </form>
+    <div id="reporte" class="live-region">{% include "admin/_reporte.html" %}</div>
+  </div>
+</div>
+
+<div class="card fade-up">
+  <div class="card-header"><h5><i class="fa-solid fa-envelope-open-text me-2"></i>Últimos correos registrados (HU-07)</h5></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Fecha</th><th>Destinatario</th><th>Asunto</th><th>Tipo</th><th>Modo</th></tr></thead>
+      <tbody>
+      {% for r in recientes %}
+        <tr><td>{{ r.enviado_en }}</td><td>{{ r.correo_destino }}</td><td><a href="{{ url_for('correos.vista_previa', rid=r.id) }}">{{ r.asunto }}</a></td><td class="text-capitalize">{{ r.tipo }}</td>
+            <td><span class="badge badge-modo-{{ r.modo }}">{{ {'smtp':'Enviado (SMTP)','demo':'Demostración','error':'Error','pendiente':'En cola'}.get(r.modo, r.modo) }}</span></td></tr>
+      {% else %}<tr><td colspan="5"><div class="empty-state mb-0"><i class="fa-solid fa-inbox"></i>Aún no se han generado correos.</div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>{% endblock %}
